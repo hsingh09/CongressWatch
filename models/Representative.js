@@ -1,4 +1,5 @@
 "use strict";
+exports.__esModule = true;
 var Representative = (function () {
     function Representative(firstName, lastName) {
         this.firstName = firstName;

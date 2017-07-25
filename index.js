@@ -29,6 +29,33 @@ function findMyRep(req, res, next) {
         next();
     });
 }
+
+// Queries the local cache DB for a representatives information
+function getRepById(req, res, next)
+{
+    var repId = req.params.repid;
+    var requestURL = "http://localhost:8080/update"
+    console.log("getRepById::ID :" + repId);
+    request(requestURL, function (requestError, requestResponse, requestBody) {
+        if (requestError) {
+            res.locals = { getRepByIdSuccess: false };
+        }
+        else {
+            // TODO: Replace this with a SQL Query
+            var representatives = JSON.parse(requestBody).results
+            console.log(representatives)
+            for (rep in representatives) {
+                console.log(rep)
+                if (repId == rep[representativeId]) {
+                    res.json(rep);
+                    next();
+                }
+            }
+        }
+        next();
+    });
+}
+
 // Makes a request to the ProPublica API to get get all members of the House
 function getHouse(req, res, next) {
     var requestURL = "https://api.propublica.org/congress/" + config.PRO_PUBLICA_API_VERSION + "/" + config.CURRENT_HOUSE + "/" + config.HOUSE + "/members.json";
@@ -95,9 +122,11 @@ function FindMatchingRepresentative(proPublicaReps, myReps, chamber) {
 }
 var server = restify.createServer();
 var zipcodePath = '/zipcode/:zipcode';
+var representativePath = '/repid/:repid';
 server.get(zipcodePath, [findMyRep, getHouse, getSenate, getRepresentativeId]);
+server.get(representativePath, [getRepById])
 server.get('/', index);
 server.head('/', index);
-server.listen(8080, function () {
+server.listen(8081, function () {
     console.log('%s listening at %s', server.name, server.url);
 });
