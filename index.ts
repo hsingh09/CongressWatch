@@ -40,6 +40,33 @@ function findMyRep(req : restify.Request, res, next : restify.Next) {
   });
 }
 
+
+// Queries the local cache DB for a representatives information
+function getRepById(req, res, next)
+{
+  var repId = req.params.repid;
+  var requestURL = "http://localhost:8080/update"
+  console.log("getRepById::ID :" + repId);
+  request(requestURL, function (requestError, requestResponse, requestBody) {
+    if (requestError) {
+      res.locals = { getRepByIdSuccess: false };
+    }
+    else {
+      // // TODO: Replace this with a SQL Query
+      // var representatives = JSON.parse(requestBody).results;
+      // console.log(representatives);
+      // for (let rep in representatives) {
+      //     console.log(rep);
+      //     // if (repId == rep.representativeId) {
+      //         // res.json(rep);
+      //         // next();
+      //     }
+      // }
+    }
+    next();
+  });
+}
+
 // Makes a request to the ProPublica API to get get all members of the House
 function getHouse(req : restify.Request, res, next : restify.Next)
 {
@@ -72,12 +99,14 @@ function getSenate(req : restify.Request, res, next: restify.Next)
   proPublicaRequest(requestURL, function(requestError, requestResponse, requestBody)
   {
     // Store the result in locals if relevant
+    console.log(requestError);
     if (requestError)
     {
       res.locals.proPublicaSenateSuccess = false;
     }
     else
     {
+      console.log(requestBody);
       res.locals.proPublicaSenateSuccess = true;
       res.locals.proPublicaSenateResults = JSON.parse(requestBody).results;
     }
@@ -90,6 +119,7 @@ function getSenate(req : restify.Request, res, next: restify.Next)
 function getRepresentativeId(req : restify.Request, res, next : restify.Next)
 {
   let representatives = res.locals.whoIsMyRepresentativeResults;
+  console.log(res.locals);
   let myReps: Representative.Representative[] = [];
   for (let key in representatives)
   {
@@ -97,8 +127,9 @@ function getRepresentativeId(req : restify.Request, res, next : restify.Next)
      let name = rep.name.split(" ");
      let firstName = name[0];
      let lastName = name[1];
+     let state = rep.sate;
 
-     let representative = new Representative.Representative(firstName, lastName);
+     let representative = new Representative.Representative(firstName, lastName, state);
      myReps.push(representative);
   }
 
@@ -120,7 +151,7 @@ function FindMatchingRepresentative(proPublicaReps, myReps : Representative.Repr
     for (let key in myReps)
     {
       let rep = myReps[key]
-      if ((proPublicaRep.first_name === rep.firstName) && (proPublicaRep.last_name === rep.lastName))
+      if ((proPublicaRep.state === rep.state) && (proPublicaRep.last_name === rep.lastName))
       {
         rep.SetRepresentativeId(proPublicaRep.id);
         rep.SetChamber(chamber);
@@ -132,11 +163,11 @@ function FindMatchingRepresentative(proPublicaReps, myReps : Representative.Repr
 var server = restify.createServer();
 
 var zipcodePath = '/zipcode/:zipcode';
+var representativePath = '/repid/:repid';
 server.get(zipcodePath, [findMyRep, getHouse, getSenate, getRepresentativeId]);
-
+server.get(representativePath, [getRepById])
 server.get('/', index);
 server.head('/', index);
-
-server.listen(8080, function() {
-  console.log('%s listening at %s', server.name, server.url);
+server.listen(8081, function () {
+    console.log('%s listening at %s', server.name, server.url);
 });
