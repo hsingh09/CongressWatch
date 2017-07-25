@@ -20,7 +20,7 @@
     "typescript": "^2.2.2"
   },
   "dependencies": {
-    "@types/request": "0.0.42",
+    "@types/request": "0.0.45",
     "@types/restify": "^2.0.42",
     "request": "^2.81.0"
   }
