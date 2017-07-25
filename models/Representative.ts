@@ -9,13 +9,13 @@ export class Representative
     firstName: string;
     lastName: string;
     chamber: Chamber;
-    representativeId : string
-    state : string
-    constructor(firstName : string, lastName : string, state : string)
+    representativeId : string;
+    state : string;
+    constructor(firstName : string, lastName : string, st : string)
     {
         this.firstName = firstName;
         this.lastName = lastName;
-        this.state = state;
+        this.state = st;
     }
 
     SetRepresentativeId(repId : string)

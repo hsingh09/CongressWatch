@@ -22,6 +22,10 @@
   "dependencies": {
     "@types/request": "0.0.45",
     "@types/restify": "^2.0.42",
-    "request": "^2.81.0"
+    "dotenv": "^4.0.0",
+    "request": "^2.81.0",
+    "restify": "^5.0.1",
+    "sequelize": "^4.4.2",
+    "tedious": "^2.0.0"
   }
 }

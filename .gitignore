@@ -41,3 +41,6 @@ vscode
 
 # Config.js for private API keys
 config.js
+
+# Environment config files
+*.env

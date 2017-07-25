@@ -1,13 +1,40 @@
+require('dotenv').config();
+
 import * as restify from "restify";
 import * as http from "http";
 import * as request from "request"
+import * as sequelize from "sequelize";
 import * as Representative from "./models/representative"
+
+var sqlize = new sequelize(process.env.REP_DB_NAME, process.env.REP_DB_USERNAME, process.env.REP_DB_PASSWORD, {
+  host: 'replist.database.windows.net',
+  port: 1433,
+  dialect: 'mssql',
+  pool: {
+    max: 5,
+    min: 0,
+    idle: 10000
+  },
+  dialectOptions: {
+    encrypt: true
+  }
+});
+
+sqlize
+  .authenticate()
+  .then(() => {
+    console.log('Connection has been established successfully.');
+    OnDatabaseConnectionEstablished();
+  })
+  .catch(err => {
+    console.error('Unable to connect to the database:', err);
+  });
 
 // Private config file for API keys
 var config = require('./config');
 var proPublicaRequest = request.defaults(
   {
-    headers: {'X-API-Key' : config.PRO_PUBLICA_API_KEY }
+    headers: {'X-API-Key' : process.env.PRO_PUBLICA_API_KEY }
   }
 )
 
@@ -99,14 +126,12 @@ function getSenate(req : restify.Request, res, next: restify.Next)
   proPublicaRequest(requestURL, function(requestError, requestResponse, requestBody)
   {
     // Store the result in locals if relevant
-    console.log(requestError);
     if (requestError)
     {
       res.locals.proPublicaSenateSuccess = false;
     }
     else
     {
-      console.log(requestBody);
       res.locals.proPublicaSenateSuccess = true;
       res.locals.proPublicaSenateResults = JSON.parse(requestBody).results;
     }
@@ -119,7 +144,6 @@ function getSenate(req : restify.Request, res, next: restify.Next)
 function getRepresentativeId(req : restify.Request, res, next : restify.Next)
 {
   let representatives = res.locals.whoIsMyRepresentativeResults;
-  console.log(res.locals);
   let myReps: Representative.Representative[] = [];
   for (let key in representatives)
   {
@@ -127,9 +151,8 @@ function getRepresentativeId(req : restify.Request, res, next : restify.Next)
      let name = rep.name.split(" ");
      let firstName = name[0];
      let lastName = name[1];
-     let state = rep.sate;
-
-     let representative = new Representative.Representative(firstName, lastName, state);
+     let state = rep.state;
+     let representative = new Representative.Representative(firstName, lastName, rep.state);
      myReps.push(representative);
   }
 
@@ -162,12 +185,20 @@ function FindMatchingRepresentative(proPublicaReps, myReps : Representative.Repr
 
 var server = restify.createServer();
 
-var zipcodePath = '/zipcode/:zipcode';
-var representativePath = '/repid/:repid';
-server.get(zipcodePath, [findMyRep, getHouse, getSenate, getRepresentativeId]);
-server.get(representativePath, [getRepById])
-server.get('/', index);
-server.head('/', index);
 server.listen(8081, function () {
     console.log('%s listening at %s', server.name, server.url);
 });
+
+
+function OnDatabaseConnectionEstablished()
+{
+  var zipcodePath = '/zipcode/:zipcode';
+  var representativePath = '/repid/:repid';
+  server.get(zipcodePath, [findMyRep, getHouse, getSenate, getRepresentativeId]);
+  server.get(representativePath, [getRepById])
+  server.get('/', index);
+  server.head('/', index);
+  server.listen(8081, function () {
+      console.log('%s listening at %s', server.name, server.url);
+  });
+}

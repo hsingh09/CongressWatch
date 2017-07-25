@@ -1,12 +1,35 @@
 "use strict";
 exports.__esModule = true;
+require('dotenv').config();
 var restify = require("restify");
 var request = require("request");
+var sequelize = require("sequelize");
 var Representative = require("./models/representative");
+var sqlize = new sequelize(process.env.REP_DB_NAME, process.env.REP_DB_USERNAME, process.env.REP_DB_PASSWORD, {
+    host: 'replist.database.windows.net',
+    port: 1433,
+    dialect: 'mssql',
+    pool: {
+        max: 5,
+        min: 0,
+        idle: 10000
+    },
+    dialectOptions: {
+        encrypt: true
+    }
+});
+sqlize
+    .authenticate()
+    .then(function () {
+    console.log('Connection has been established successfully.');
+    OnDatabaseConnectionEstablished();
+})["catch"](function (err) {
+    console.error('Unable to connect to the database:', err);
+});
 // Private config file for API keys
 var config = require('./config');
 var proPublicaRequest = request.defaults({
-    headers: { 'X-API-Key': config.PRO_PUBLICA_API_KEY }
+    headers: { 'X-API-Key': process.env.PRO_PUBLICA_API_KEY }
 });
 function index(req, res, next) {
     res.send("Listening at " + server.url);
@@ -76,12 +99,10 @@ function getSenate(req, res, next) {
     console.log("getSenate::requestURL = " + requestURL);
     proPublicaRequest(requestURL, function (requestError, requestResponse, requestBody) {
         // Store the result in locals if relevant
-        console.log(requestError);
         if (requestError) {
             res.locals.proPublicaSenateSuccess = false;
         }
         else {
-            console.log(requestBody);
             res.locals.proPublicaSenateSuccess = true;
             res.locals.proPublicaSenateResults = JSON.parse(requestBody).results;
         }
@@ -91,15 +112,16 @@ function getSenate(req, res, next) {
 // Finds the MemberID of your representative based on district
 function getRepresentativeId(req, res, next) {
     var representatives = res.locals.whoIsMyRepresentativeResults;
-    console.log(res.locals);
     var myReps = [];
     for (var key in representatives) {
         var rep = representatives[key];
         var name_1 = rep.name.split(" ");
         var firstName = name_1[0];
         var lastName = name_1[1];
-        var state = rep.sate;
-        var representative = new Representative.Representative(firstName, lastName, state);
+        var state = rep.state;
+        console.log(state);
+        console.log(rep.state);
+        var representative = new Representative.Representative(firstName, lastName, rep.state);
         myReps.push(representative);
     }
     var senators = res.locals.proPublicaSenateResults[0]['members'];
@@ -122,12 +144,17 @@ function FindMatchingRepresentative(proPublicaReps, myReps, chamber) {
     }
 }
 var server = restify.createServer();
-var zipcodePath = '/zipcode/:zipcode';
-var representativePath = '/repid/:repid';
-server.get(zipcodePath, [findMyRep, getHouse, getSenate, getRepresentativeId]);
-server.get(representativePath, [getRepById]);
-server.get('/', index);
-server.head('/', index);
 server.listen(8081, function () {
     console.log('%s listening at %s', server.name, server.url);
 });
+function OnDatabaseConnectionEstablished() {
+    var zipcodePath = '/zipcode/:zipcode';
+    var representativePath = '/repid/:repid';
+    server.get(zipcodePath, [findMyRep, getHouse, getSenate, getRepresentativeId]);
+    server.get(representativePath, [getRepById]);
+    server.get('/', index);
+    server.head('/', index);
+    server.listen(8081, function () {
+        console.log('%s listening at %s', server.name, server.url);
+    });
+}
