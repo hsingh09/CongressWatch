@@ -1,0 +1,233 @@
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+# Downloading and Loading the Data
+
+> Download the data from <https://raw.githubusercontent.com/clanfear/CSSS508/master/King2012general-ecanvass.txt> (Windows: Right-Click -> Save as...; Mac: Ctrl-Click -> Download). It is a plain text file of data, about 60 MB in size. Save it somewhere on your computer, and read the file into R. You will want to use the `cache=TRUE` chunk option for this (and potentially other chunks). I would recommend creating a folder to use as a working directory for this homework and saving the data there.
+
+[
+```{r reader, cache=TRUE, cache = TRUE, message=FALSE, warning=FALSE}
+library(readr)
+king2012gen <- read_tsv("/Users/paigewartko/Dropbox/CSSS 508, R Class/CSSS 508_HW 5 Folder/King2012general-ecanvass.txt")
+```
+]
+
+# Inspecting the Data
+
+> Describe the data in its current state. How many rows are there? What variables on the data? What kinds of values do they take (don't list them all if there are many)? Are the column types sensible? Is there anything else worth mentioning?
+
+[There are `r nrow(king2012gen)` rows in the data. The variables are `r colnames(king2012gen)`. The variable `Precinct` has `r length(unique(king2012gen$Precinct))` distinct values, which represent the precincts in King County. The variable `Race` has `r length(unique(king2012gen$Race))` distinct values, which represent all the ballot measures in the 2012 general election. `LEG` represents legislative districts, of which there are `r length(unique(king2012gen$LEG))`. Party represents the political party the candidates were affiliated with, and there are `r length(unique(king2012gen$Party))` listed. `CounterType` describes which option was checked for each measure, such as a candidate's name or a write-in, and it also has rows to indicate the number of people who left that measure blank and the total number of registered voters. `SumOfCount` has the total vote count that corresponds to each value in the other columns. The variables with numerical values are integer vectors and the variables with words are character vectors, which is sensible. Some of the variables have "NA" values.
+]
+
+# The Quantities of Interest
+
+> We are interested in turnout rates for each of these races in each precinct. We will measure turnout as times votes were counted (including for a candidate, blank, write-in, or "over vote") out of registered voters.
+
+> We are also interested in differences between precincts in Seattle and precincts elsewhere in King County. Again, these data are not documented, so you will have to figure out how to do this.
+
+> Finally, we will want to look at precinct-level support for the Democratic candidates in King County in 2012 for the following contests:
+
+> * President (and Vice-President)
+> * Governor
+> * Lieutenant Governor
+
+> We will measure support as the percentage of votes in a precinct for the Democratic candidate out of all votes for candidates or write-ins. Do not include blank votes or "over votes" (where the voter indicated multiple choices) in the overall vote count for the denominator.
+
+> Use `dplyr`, `tidyr`, or any other tools you like to get the data to **one row per precinct** with the following columns (*at minimum*):
+
+> * Precinct identifier
+> * Indicator for whether the precinct is in Seattle or not
+> * Precinct size in terms of registered voters
+> * Turnout rate
+> * Percentage Democratic support for President
+> * Percentage Democratic support for Governor
+> * Percentage Democratic support for Lieutenant Governor
+
+[
+```{r data_wrangling, cache = TRUE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(tidyr)
+king2012new <- select(king2012gen, -LEG, -CC, -CG, -CounterGroup)
+
+
+#create Seattle variable
+library(stringr)
+sea_precincts <- king2012new %>%
+    filter(str_sub(king2012new$Precinct, 1,4)=="SEA ")    #creates a subset just of the Seattle precincts
+
+Seattle <- ifelse(king2012new$Precinct %in% sea_precincts$Precinct, 1, 0)   #creates a vector of 0, 1 to indicate whether it's in Seattle
+
+king2012Seattle <- cbind(king2012new, Seattle)  #binds the Seattle column onto the dataset
+
+#getting one of just registered voters
+
+  reg_voters <- king2012new %>%  
+    filter(CounterType == "Registered Voters", Race == "President and Vice President of the United States  partisan office") %>% 
+    select(Precinct, RegVoters = SumOfCount) #this automatically renames
+            #just need to filter to one race so there aren't a bunch of duplicates
+            #should automatically get to 1 row per precinct
+
+    gov <-  "Governor  partisan office"
+    lgov <- "Lieutenant Governor  partisan office"
+    pres <- "President and Vice President of the United States  partisan office"
+  
+    pres_dem <- king2012new %>% 
+                filter(Race=="President and Vice President of the United States  partisan office", Party=="DPN") %>% 
+                select(Precinct, dem_vote_pres=SumOfCount)
+    
+    #creating the mini data frames for those who voted democratic
+    gov_dem <- king2012Seattle %>% 
+        filter(Race==lgov, Party=="Dcr") %>% 
+        select(Precinct, dem_vote_gov=SumOfCount)
+    
+    lgov_dem <- king2012Seattle %>% 
+        filter(Race==lgov, Party=="Dcr") %>% 
+        select(Precinct, dem_vote_lgov=SumOfCount)
+    
+    pres_total <- king2012new %>% 
+        filter(Race=="President and Vice President of the United States  partisan office") %>% 
+        select(Precinct, total_vote_pres=SumOfCount)
+
+    #generating the negative "in" infix operator 
+               
+               `%!in%` <- Negate(`%in%`)
+           
+               
+       #Lieutenant gov percent Dem
+           false_votes <- c("Registered Voters", "Times Blank Voted" , "Times Counted", "Times Over Voted")
+        actualVotes_lgov <- king2012new %>%  
+                        filter(CounterType %!in% false_votes) %>%
+                        filter(Race== "Lieutenant Governor  partisan office") %>% 
+                        group_by(Precinct) %>% 
+                        summarize(TotalVotes = sum(SumOfCount)) %>% 
+                        select(Precinct, TotalVotes)
+            
+            lgov_dem_all <- left_join(lgov_dem, actualVotes_lgov) 
+              #it assumes by Precinct
+            lgov_dem_final <-  mutate(lgov_dem_all, lgov_percent_dem = dem_vote_lgov / TotalVotes) %>% 
+              select(Precinct, lgov_percent_dem)
+               
+       #Gov percent dem 
+                actualVotes_gov <- king2012new %>%  
+                  filter(CounterType %!in% false_votes) %>%
+                  filter(Race== "Governor  partisan office") %>% 
+                  group_by(Precinct) %>% 
+                  summarize(TotalVotes = sum(SumOfCount)) %>% 
+                  select(Precinct, TotalVotes)
+                
+                gov_dem_all <- left_join(gov_dem, actualVotes_gov) 
+                #it assumes by Precinct
+                gov_dem_final <-  mutate(gov_dem_all, gov_percent_dem = dem_vote_gov / TotalVotes) %>% 
+                  select(Precinct, gov_percent_dem)
+                
+          #Pres percent dem 
+                actualVotes_pres <- king2012new %>%  
+                  filter(CounterType %!in% false_votes) %>%
+                  filter(Race== "President and Vice President of the United States  partisan office") %>% 
+                  group_by(Precinct) %>% 
+                  summarize(TotalVotes = sum(SumOfCount)) %>% 
+                  select(Precinct, TotalVotes)
+                
+                pres_dem_all <- left_join(pres_dem, actualVotes_pres) 
+                #it assumes by Precinct
+                pres_dem_final <-  mutate(pres_dem_all, pres_percent_dem = dem_vote_pres / TotalVotes) %>% 
+                    select(Precinct, pres_percent_dem)
+                        
+
+#spread it to a "wide" format
+
+turnout_rates <- king2012new %>%
+    filter(CounterType %in% c("Registered Voters", "Times Counted")) %>%
+    select(Precinct, Race, CounterType, SumOfCount) %>%
+    spread(key = CounterType, value = SumOfCount) %>%
+    mutate(v_turnout = `Times Counted` / `Registered Voters`)
+  #this gives turnout rates for each race
+
+turnout_rates_mean <- turnout_rates %>% group_by(Precinct) %>% 
+  summarize(MeanTurnout= mean(v_turnout[!is.na(v_turnout)])) %>% #this avoids including NaNs
+  select(Precinct, MeanTurnout)
+    #this collapses to an average turnout rate per precinct 
+    #note, it is over all elections
+
+
+library(stringr)
+
+
+#combining to final dataset
+#gets the Seattle part while cleaning it to the variables we want
+king2012byprec <- king2012Seattle %>% group_by(Precinct) %>% 
+  filter(Race=="President and Vice President of the United States  partisan office") %>% 
+  filter(CounterType=="Times Counted") %>% 
+  select(Precinct, Seattle)
+#selected on one race adn one countertype just to get it down to one observation per row
+
+#registered voters part
+king2012regvote <- left_join(king2012byprec, reg_voters) 
+
+#turnout rates part
+king2012turnout <- left_join(king2012regvote, turnout_rates_mean) #joined, automatically by precinct
+
+#percent democratic part
+  #president
+
+king2012pres <- left_join(king2012turnout, pres_dem_final) #joined, automaticaly by precinct
+
+king2012gov <- left_join(king2012pres, gov_dem_final) #joined, automatically by precinct
+
+king2012ALL <- left_join(king2012gov, lgov_dem_final) #joined, automatically by precinct
+
+king2012_500 <- king2012ALL %>% filter(RegVoters>=500)
+  
+  #creating a rank variables
+  
+Rank <- rank(king2012_500$pres_percent_dem, na.last = "keep",
+  ties.method = c("average"))
+
+  king2012rank <-data.frame(king2012_500, Rank)
+
+
+
+#gather()-ing to put in long format for ggplot (the second graph w dem support by race)
+  
+ king2012longforplot <- king2012rank %>% gather(key=Race, value=support, pres_percent_dem:lgov_percent_dem)
+ king2012longforplot$Race <- as.factor(king2012longforplot$Race)
+  levels(king2012longforplot$Race)
+  king2012longforplot$Race <- factor(king2012longforplot$Race, levels= rev(levels(king2012longforplot$Race)))
+  
+```
+]
+
+# Graphing the Results
+
+> Make a scatterplot where the horizontal axis (x-axis) is the number of registered voters in the precinct, and the vertical axis (y-axis) is the turnout rate. Color the precincts in Seattle one color, and use a different color for other precincts. Do you observe anything?
+
+[
+``` {r turnout_plot}
+library(ggplot2)
+ggplot(data=king2012ALL, aes(x = RegVoters, y = MeanTurnout, color = Seattle)) + 
+  geom_point(alpha=0.5, size=.7) +
+  ggtitle("Voter Turnout by Number of Registered Voters in 2012 General Election, King County") +
+  xlab("Number of Registered Voters") +
+  ylab("Average Voter Turnout") +
+  theme_bw() 
+
+```
+
+I observe that voter turnout is generally higher in precincts in Seattle than in precincts elsewhere in King County. There's not an obvious association between the number of registered voters and voter turnout.
+]
+
+> Now let's visualize the Democratic support rates for the three races within each precinct for sufficently large precincts. Limit the data to precincts with at least 500 registered voters. Make a line plot where the horizontal axis indicates precincts, and the vertical axis shows the Democratic support rates. There should be three lines in different colors (one for each race of interest).
+
+> *Do not* label the precincts on the horizontal axis (you will probably have to search to figure out how). You should, however, arrange them on the axis in order from smallest to largest in terms of support for the Democratic candidate for president --- that is, the line plotting percentage support for Obama should be smoothly increasing from left to right. (Hint: you will probably want to add a new column to the data giving the order to plot these in.) The order of the lines in the legend should follow the order of the lines at the right edge of the plot.
+
+[
+```{r demsupport_plot }
+ggplot(data=king2012longforplot, aes(x = reorder(Precinct, Rank), y = support , group=Race, color=Race)) + 
+  geom_point(alpha=0.5, size=0.7) +
+  geom_line() +
+  theme(axis.text.x=element_blank(), axis.ticks.x=element_blank()) +
+  labs(title ="Percent Demogratic Support by Precinct in King County General Election, 2012", x = "Precincts", y = "Percent Democratic Support") 
+```
+]
