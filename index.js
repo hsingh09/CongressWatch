@@ -96,6 +96,20 @@ function getRepById(req, res, next) {
         next();
     });
 }
+// Returns all sentators
+function getAllSenators(req, res, next) {
+    repDb.findAll({ where: { chamber: 1 /* Senate */ } }).then(function (reps) {
+        res.json(reps);
+        next();
+    });
+}
+// Returns all hose members
+function getAllHouseMembers(req, res, next) {
+    repDb.findAll({ where: { chamber: 0 /* House */ } }).then(function (reps) {
+        res.json(reps);
+        next();
+    });
+}
 // Makes a request to the ProPublica API to get get all members of the House
 function getHouse(req, res, next) {
     var requestURL = "https://api.propublica.org/congress/" + config.PRO_PUBLICA_API_VERSION + "/" + config.CURRENT_HOUSE + "/" + config.HOUSE + "/members.json";
@@ -167,8 +181,12 @@ server.listen(8081, function () {
 function OnDatabaseConnectionEstablished() {
     var zipcodePath = '/zipcode/:zipcode';
     var representativePath = '/repid/:repid';
+    var houseMembersPath = '/house';
+    var senatorsPath = '/senate';
     server.get(zipcodePath, [findMyRep, getHouse, getSenate, getRepresentativeId]);
     server.get(representativePath, [getRepById]);
+    server.get(houseMembersPath, [getAllHouseMembers]);
+    server.get(senatorsPath, [getAllSenators]);
     server.get('/', index);
     server.head('/', index);
     server.listen(8081, function () {

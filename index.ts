@@ -114,6 +114,24 @@ function getRepById(req, res, next)
     })
 }
 
+// Returns all sentators
+function getAllSenators(req, res, next)
+{
+  repDb.findAll({where: {chamber: Representative.Chamber.Senate}}).then (reps => {
+    res.json(reps);
+    next();
+  })
+}
+
+// Returns all hose members
+function getAllHouseMembers(req, res, next)
+{
+  repDb.findAll({where: {chamber: Representative.Chamber.House}}).then (reps => {
+    res.json(reps);
+    next();
+  })
+}
+
 // Makes a request to the ProPublica API to get get all members of the House
 function getHouse(req : restify.Request, res, next : restify.Next)
 {
@@ -214,8 +232,12 @@ function OnDatabaseConnectionEstablished()
 {
   var zipcodePath = '/zipcode/:zipcode';
   var representativePath = '/repid/:repid';
+  var houseMembersPath = '/house'
+  var senatorsPath = '/senate'
   server.get(zipcodePath, [findMyRep, getHouse, getSenate, getRepresentativeId]);
-  server.get(representativePath, [getRepById])
+  server.get(representativePath, [getRepById]);
+  server.get(houseMembersPath, [getAllHouseMembers]);
+  server.get(senatorsPath, [getAllSenators]);
   server.get('/', index);
   server.head('/', index);
   server.listen(8081, function () {
