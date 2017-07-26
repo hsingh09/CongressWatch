@@ -23,6 +23,7 @@
     "@types/request": "0.0.45",
     "@types/restify": "^2.0.42",
     "@types/tedious": "^1.8.29",
+    "sequelize-typescript": "^0.3.5",
     "dotenv": "^4.0.0",
     "request": "^2.81.0",
     "restify": "^5.0.1",

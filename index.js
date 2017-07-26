@@ -33,6 +33,24 @@ var repDb = sqlize.define('Representative', {
     },
     party: {
         type: sequelize.INTEGER
+    },
+    contactUrl: {
+        type: sequelize.STRING
+    },
+    cspanId: {
+        type: sequelize.STRING
+    },
+    facebookAccount: {
+        type: sequelize.STRING
+    },
+    googleEntityId: {
+        type: sequelize.STRING
+    },
+    govtrackId: {
+        type: sequelize.STRING
+    },
+    phone: {
+        type: sequelize.STRING
     }
 });
 sqlize
@@ -73,7 +91,7 @@ function findMyRep(req, res, next) {
 // Queries the local cache DB for a representatives information
 function getRepById(req, res, next) {
     var repId = req.params.repid;
-    repDb.findAll().then(function (reps) {
+    repDb.findOne({ where: { representativeId: repId } }).then(function (reps) {
         res.json(reps);
         next();
     });

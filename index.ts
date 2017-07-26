@@ -35,6 +35,24 @@ const repDb = sqlize.define('Representative', {
     },
     party: {
         type: sequelize.INTEGER
+    },
+    contactUrl: {
+        type: sequelize.STRING
+    },
+    cspanId: {
+        type: sequelize.STRING
+    },
+    facebookAccount: {
+        type: sequelize.STRING
+    },
+    googleEntityId: {
+        type: sequelize.STRING
+    },
+    govtrackId: {
+        type: sequelize.STRING
+    },
+    phone: {
+        type: sequelize.STRING
     }
 });
 
@@ -90,7 +108,7 @@ function findMyRep(req : restify.Request, res, next : restify.Next) {
 function getRepById(req, res, next)
 {
   var repId = req.params.repid;
-      repDb.findAll().then(reps => {
+      repDb.findOne({where: {representativeId: repId}}).then(reps => {
         res.json(reps);
         next();
     })
