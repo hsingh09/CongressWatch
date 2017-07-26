@@ -61,8 +61,6 @@ sqlize
 })["catch"](function (err) {
     console.error('Unable to connect to the database:', err);
 });
-// Private config file for API keys
-var config = require('./config');
 var proPublicaRequest = request.defaults({
     headers: { 'X-API-Key': process.env.PRO_PUBLICA_API_KEY }
 });
@@ -176,7 +174,7 @@ function FindMatchingRepresentative(proPublicaReps, myReps, chamber) {
 }
 var server = restify.createServer();
 var port = process.env.port || 8081;
-server.listen(8081, function () {
+server.listen(port, function () {
     console.log('%s listening at %s', server.name, server.url);
 });
 function OnDatabaseConnectionEstablished() {
