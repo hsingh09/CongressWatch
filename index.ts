@@ -2,9 +2,9 @@ require('dotenv').config();
 
 import * as restify from "restify";
 import * as http from "http";
-import * as request from "request"
+import * as request from "request";
 import * as sequelize from "sequelize";
-import * as Representative from "./models/representative"
+import * as Representative from "./models/representative";
 
 var sqlize = new sequelize(process.env.REP_DB_NAME, process.env.REP_DB_USERNAME, process.env.REP_DB_PASSWORD, {
   host: 'replist.database.windows.net',
@@ -135,7 +135,7 @@ function getAllHouseMembers(req, res, next)
 // Makes a request to the ProPublica API to get get all members of the House
 function getHouse(req : restify.Request, res, next : restify.Next)
 {
-  let requestURL = "https://api.propublica.org/congress/" + config.PRO_PUBLICA_API_VERSION + "/" + config.CURRENT_HOUSE + "/" + config.HOUSE + "/members.json";
+  let requestURL = "https://api.propublica.org/congress/" + process.env.PRO_PUBLICA_API_VERSION + "/" + process.env.CURRENT_HOUSE + "/" + process.env.HOUSE + "/members.json";
   console.log("getHouse::requestURL = " + requestURL);
 
   proPublicaRequest(requestURL, function(requestError, requestResponse, requestBody)
@@ -158,7 +158,7 @@ function getHouse(req : restify.Request, res, next : restify.Next)
 // Makes a request to the ProPublica API and gets all members of the Senate
 function getSenate(req : restify.Request, res, next: restify.Next)
 {
-  let requestURL = "https://api.propublica.org/congress/" + config.PRO_PUBLICA_API_VERSION + "/" + config.CURRENT_SENATE + "/" + config.SENATE + "/members.json";
+  let requestURL = "https://api.propublica.org/congress/" + process.env.PRO_PUBLICA_API_VERSION + "/" + process.env.CURRENT_SENATE + "/" + process.env.SENATE + "/members.json";
   console.log("getSenate::requestURL = " + requestURL);
 
   proPublicaRequest(requestURL, function(requestError, requestResponse, requestBody)
