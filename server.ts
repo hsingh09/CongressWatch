@@ -66,8 +66,6 @@ sqlize
     console.error('Unable to connect to the database:', err);
   });
 
-// Private config file for API keys
-var config = require('./config');
 var proPublicaRequest = request.defaults(
   {
     headers: {'X-API-Key' : process.env.PRO_PUBLICA_API_KEY }
