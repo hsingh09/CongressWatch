@@ -225,6 +225,8 @@ server.listen(port, function () {
     console.log('%s listening at %s', server.name, server.url);
 });
 
+server.get('/', index);
+server.head('/', index);
 
 function OnDatabaseConnectionEstablished()
 {
@@ -236,9 +238,4 @@ function OnDatabaseConnectionEstablished()
   server.get(representativePath, [getRepById]);
   server.get(houseMembersPath, [getAllHouseMembers]);
   server.get(senatorsPath, [getAllSenators]);
-  server.get('/', index);
-  server.head('/', index);
-  server.listen(8081, function () {
-      console.log('%s listening at %s', server.name, server.url);
-  });
 }
