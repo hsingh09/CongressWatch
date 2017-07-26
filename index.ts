@@ -20,6 +20,24 @@ var sqlize = new sequelize(process.env.REP_DB_NAME, process.env.REP_DB_USERNAME,
   }
 });
 
+const repDb = sqlize.define('Representative', {
+    representativeId: {
+        type: sequelize.STRING
+    },
+    firstName: {
+        type: sequelize.STRING
+    },
+    lastName: {
+        type: sequelize.STRING
+    },
+    chamber: {
+        type: sequelize.INTEGER
+    },
+    party: {
+        type: sequelize.INTEGER
+    }
+});
+
 sqlize
   .authenticate()
   .then(() => {
@@ -72,26 +90,10 @@ function findMyRep(req : restify.Request, res, next : restify.Next) {
 function getRepById(req, res, next)
 {
   var repId = req.params.repid;
-  var requestURL = "http://localhost:8080/update"
-  console.log("getRepById::ID :" + repId);
-  request(requestURL, function (requestError, requestResponse, requestBody) {
-    if (requestError) {
-      res.locals = { getRepByIdSuccess: false };
-    }
-    else {
-      // // TODO: Replace this with a SQL Query
-      // var representatives = JSON.parse(requestBody).results;
-      // console.log(representatives);
-      // for (let rep in representatives) {
-      //     console.log(rep);
-      //     // if (repId == rep.representativeId) {
-      //         // res.json(rep);
-      //         // next();
-      //     }
-      // }
-    }
-    next();
-  });
+      repDb.findAll().then(reps => {
+        res.json(reps);
+        next();
+    })
 }
 
 // Makes a request to the ProPublica API to get get all members of the House

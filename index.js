@@ -18,6 +18,23 @@ var sqlize = new sequelize(process.env.REP_DB_NAME, process.env.REP_DB_USERNAME,
         encrypt: true
     }
 });
+var repDb = sqlize.define('Representative', {
+    representativeId: {
+        type: sequelize.STRING
+    },
+    firstName: {
+        type: sequelize.STRING
+    },
+    lastName: {
+        type: sequelize.STRING
+    },
+    chamber: {
+        type: sequelize.INTEGER
+    },
+    party: {
+        type: sequelize.INTEGER
+    }
+});
 sqlize
     .authenticate()
     .then(function () {
@@ -56,24 +73,8 @@ function findMyRep(req, res, next) {
 // Queries the local cache DB for a representatives information
 function getRepById(req, res, next) {
     var repId = req.params.repid;
-    var requestURL = "http://localhost:8080/update";
-    console.log("getRepById::ID :" + repId);
-    request(requestURL, function (requestError, requestResponse, requestBody) {
-        if (requestError) {
-            res.locals = { getRepByIdSuccess: false };
-        }
-        else {
-            // // TODO: Replace this with a SQL Query
-            // var representatives = JSON.parse(requestBody).results;
-            // console.log(representatives);
-            // for (let rep in representatives) {
-            //     console.log(rep);
-            //     // if (repId == rep.representativeId) {
-            //         // res.json(rep);
-            //         // next();
-            //     }
-            // }
-        }
+    repDb.findAll().then(function (reps) {
+        res.json(reps);
         next();
     });
 }
@@ -119,8 +120,6 @@ function getRepresentativeId(req, res, next) {
         var firstName = name_1[0];
         var lastName = name_1[1];
         var state = rep.state;
-        console.log(state);
-        console.log(rep.state);
         var representative = new Representative.Representative(firstName, lastName, rep.state);
         myReps.push(representative);
     }
