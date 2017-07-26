@@ -103,6 +103,9 @@ function getAllSenators(req, res, next) {
 }
 // Returns all hose members
 function getAllHouseMembers(req, res, next) {
+    console.log("Called getAllHouseMembers");
+    console.log("repDB: " + repDb);
+    console.log("Server: " + server);
     repDb.findAll({ where: { chamber: 0 /* House */ } }).then(function (reps) {
         res.json(reps);
         next();
@@ -179,13 +182,15 @@ server.listen(port, function () {
 });
 server.get('/', index);
 server.head('/', index);
+var houseMembersPath = '/house';
+server.get(houseMembersPath, [getAllHouseMembers]);
 function OnDatabaseConnectionEstablished() {
     var zipcodePath = '/zipcode/:zipcode';
     var representativePath = '/repid/:repid';
-    var houseMembersPath = '/house';
+    //var houseMembersPath = '/house'
     var senatorsPath = '/senate';
     server.get(zipcodePath, [findMyRep, getHouse, getSenate, getRepresentativeId]);
     server.get(representativePath, [getRepById]);
-    server.get(houseMembersPath, [getAllHouseMembers]);
+    //server.get(houseMembersPath, [getAllHouseMembers]);
     server.get(senatorsPath, [getAllSenators]);
 }
