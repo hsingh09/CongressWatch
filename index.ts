@@ -222,7 +222,7 @@ function FindMatchingRepresentative(proPublicaReps, myReps : Representative.Repr
 }
 
 var server = restify.createServer();
-
+var port = process.env.port || 8081;
 server.listen(8081, function () {
     console.log('%s listening at %s', server.name, server.url);
 });

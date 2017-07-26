@@ -112,7 +112,7 @@ function getAllHouseMembers(req, res, next) {
 }
 // Makes a request to the ProPublica API to get get all members of the House
 function getHouse(req, res, next) {
-    var requestURL = "https://api.propublica.org/congress/" + config.PRO_PUBLICA_API_VERSION + "/" + config.CURRENT_HOUSE + "/" + config.HOUSE + "/members.json";
+    var requestURL = "https://api.propublica.org/congress/" + process.env.PRO_PUBLICA_API_VERSION + "/" + process.env.CURRENT_HOUSE + "/" + process.env.HOUSE + "/members.json";
     console.log("getHouse::requestURL = " + requestURL);
     proPublicaRequest(requestURL, function (requestError, requestResponse, requestBody) {
         if (requestError) {
@@ -128,7 +128,7 @@ function getHouse(req, res, next) {
 }
 // Makes a request to the ProPublica API and gets all members of the Senate
 function getSenate(req, res, next) {
-    var requestURL = "https://api.propublica.org/congress/" + config.PRO_PUBLICA_API_VERSION + "/" + config.CURRENT_SENATE + "/" + config.SENATE + "/members.json";
+    var requestURL = "https://api.propublica.org/congress/" + process.env.PRO_PUBLICA_API_VERSION + "/" + process.env.CURRENT_SENATE + "/" + process.env.SENATE + "/members.json";
     console.log("getSenate::requestURL = " + requestURL);
     proPublicaRequest(requestURL, function (requestError, requestResponse, requestBody) {
         // Store the result in locals if relevant
@@ -175,6 +175,7 @@ function FindMatchingRepresentative(proPublicaReps, myReps, chamber) {
     }
 }
 var server = restify.createServer();
+var port = process.env.port || 8081;
 server.listen(8081, function () {
     console.log('%s listening at %s', server.name, server.url);
 });
